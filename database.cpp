@@ -179,3 +179,32 @@ QVector<Wiadomosc> Database::getChatLog(QString user, QString secondPerson)
     return vector;
 }
 
+void Database::addNotification(QString type, QString receiver, QString message)
+{
+    QString q(QString("INSERT INTO powiadomienia VALUES ('") + type + QString("','") + receiver + QString("','") + message +
+              QString("')"));
+
+    QSqlQuery(q, db);
+}
+
+QVector<Powiadomienie> Database::getAndRemoveUserNotifications(QString user)
+{
+    QString q(QString("SELECT * FROM powiadomienia WHERE (powiadomienia.uzytkownik='") + user + QString("')"));
+    QSqlQuery query(q, db);
+    QVector<Powiadomienie> vector;
+
+    while(query.next())
+    {
+        Powiadomienie pow;
+        pow.type = query.value(0).toString();
+        pow.message = query.value(2).toString();
+
+        vector.push_back(pow);
+    }
+
+    QString q2(QString("DELETE FROM powiadomienia WHERE (powiadomienia.uzytkownik='") + user + QString("')"));
+    QSqlQuery(q2, db);
+
+    return vector;
+}
+

@@ -52,6 +52,12 @@ struct Wiadomosc
     QString date;
 };
 
+struct Powiadomienie
+{
+    QString type;
+    QString message;
+};
+
 class Database : public QObject
 {
     Q_OBJECT
@@ -64,8 +70,12 @@ public:
     QVector<QPair<QString, QString> > getGroupList(QString login);
     GroupInfo getGroupInfo(QString grupa);
     QVector<QString> getAllUsers();
-    void addChatMessage(QString sender, QString receiver, QString wiadomosc);
     QVector<Wiadomosc> getChatLog(QString user, QString secondPerson);
+    QVector<Powiadomienie> getAndRemoveUserNotifications(QString user);
+
+
+    void addChatMessage(QString sender, QString receiver, QString wiadomosc);
+    void addNotification(QString type, QString receiver, QString message);
 
 private:
     QSqlDatabase db;

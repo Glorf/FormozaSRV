@@ -35,7 +35,6 @@ struct Client
     QString login;
     QString password;
     qint16 loopTimeout;
-    QBuffer *buffer;
     bool logged;
 };
 
@@ -48,8 +47,6 @@ private:
     QHash<QTcpSocket*, Client*> clientMap;
     QHash<QString, QTcpSocket*> loginMap;
     QList<QTcpSocket*> connections;
-    QHash<QString, QVector<QPair<QString, QVector<QString> > >* > messagesToSend;
-    int currentLoopClient;
     Database *db;
 
 private slots:

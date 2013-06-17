@@ -42,9 +42,6 @@ void Connection::newClient()
     QTcpSocket *connection = mServer->nextPendingConnection();
     clientMap.insert(connection, cli);
     connections.append(connection);
-    QBuffer* buffer = new QBuffer(this);
-    buffer->open(QIODevice::ReadWrite);
-    cli->buffer = buffer;
     connect(connection, SIGNAL(disconnected()), SLOT(disconn()));
     connect(connection, SIGNAL(readyRead()),	SLOT(receiveMessage()));
 }
@@ -54,8 +51,6 @@ void Connection::disconn()
     QTcpSocket* disconn = static_cast<QTcpSocket*>(sender());
     Client *cli = clientMap.take(disconn);
     loginMap.take(cli->login);
-    cli->buffer->close();
-    cli->buffer->deleteLater();
     connections.removeAll(disconn);
     disconn->deleteLater();
     delete cli;
@@ -117,6 +112,34 @@ int Connection::receiveMessage()
             sock->waitForReadyRead();
             if(QString(sock->readAll())!=ackResponse)
                 return 0;
+        }
+
+        else if(receivedArg == QString("fup"))
+        {
+            QVector<Powiadomienie> vector = db->getAndRemoveUserNotifications(cli->login);
+
+            QString ilosc = QString::number(vector.size());
+
+            sock->write(ilosc.toUtf8().data());
+            sock->waitForBytesWritten();
+            sock->waitForReadyRead();
+            if(QString(sock->readAll())!=ackResponse)
+                return 0;
+
+            for(int i=0; i<vector.size(); i++)
+            {
+                sock->write(vector.at(i).type.toUtf8().data());
+                sock->waitForBytesWritten();
+                sock->waitForReadyRead();
+                if(QString(sock->readAll())!=ackResponse)
+                    return 0;
+
+                sock->write(vector.at(i).message.toUtf8().data());
+                sock->waitForBytesWritten();
+                sock->waitForReadyRead();
+                if(QString(sock->readAll())!=ackResponse)
+                    return 0;
+            }
         }
 
         else if(receivedArg==QString("gru"))
@@ -284,20 +307,7 @@ void Connection::sendMessage(QString user, QPair<QString, QVector<QString> > par
     QString ackResponse("ack");
 
     if(loginMap.find(user) == loginMap.end())
-    {
-        if(messagesToSend.find(user) == messagesToSend.end())
-        {
-            QVector<QPair<QString, QVector<QString> > > *vector = new QVector<QPair<QString, QVector<QString> > >;
-            vector->push_back(para);
-            messagesToSend.insert(user, vector);
-        }
-        else
-        {
-            QVector<QPair<QString, QVector<QString> > > *vector;
-            vector = messagesToSend.value(user);
-            vector->push_back(para);
-        }
-    }
+        db->addNotification(QString("wia"), user, para.second.at(0));
 
     else
     {
